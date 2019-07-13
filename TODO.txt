@@ -1,0 +1,6 @@
+change usage to allow not just query of a single region but multiple regions from files or flags
+
+main.R extract ...
+main.R overlap ...
+
+add usage of finding overlap with proteins from gtf and plotting
