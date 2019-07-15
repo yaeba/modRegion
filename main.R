@@ -4,7 +4,7 @@
 'Main Program.
 
 Usage:
-	main.R extract (-r=<region> | -f=<regions_txt>)... (-o=<output> | -p=<plot>)... [--nanopolish <[label:]fileA>]... [--tombo <[label:]fileB>]... [--deepsignal <[label:]fileC]...
+	main.R extract (-r=<region> | -f=<regions_txt>)... (-o=<output> | -p=<plot> [--title=<title>])... [--nanopolish <[label:]fileA>]... [--tombo <[label:]fileB>]... [--deepsignal <[label:]fileC]...
 
 Options:
 	-h --help  Show this screen.
@@ -15,7 +15,8 @@ Options:
 	--deepsignal <[label:]fileC>  DeepSignal methylation data and (optional) label name.
 	--gene <gtf_file>  Gene information in Gene Transfer Format.
 	-o --output=<output>  Save dataframe to tsv.
-	-p --plot=<plot>  Save plot to pdf.
+	-p --plot=<plot>  Save plot(s) to pdf.
+	--title=<title>  Title of the plot.
 
 
 ' -> doc
@@ -73,23 +74,6 @@ parse_label_file <- function(string) {
 }
 
 
-
-# parse_regions <- function(region, regions_file=NULL) {
-#   from_file <- NULL
-#   if (!is.null(regions_file)) {
-#     from_file <- read.table(regions_file, sep='\n') %>%
-#       pull('V1') %>%
-#       as.vector()
-#   }
-#   raw_regions <- c(from_file, region)
-#   
-#   verbose(paste(raw_regions, collapse=', '))
-#   verbose('\n')
-#   
-#   sapply(raw_regions, parse_genomic_region)
-# }
-
-
 write_output <- function(df, outfile) {
   df %>%
     mutate(log_lik_ratio = format(log_lik_ratio, digits=4, format='f', scientific=FALSE),
@@ -98,19 +82,29 @@ write_output <- function(df, outfile) {
 }
 
 
-plot_region <- function(df, outfile, width=10, height=10) {
+plot_region <- function(df, raw_regions, outfile, width=10, height=10, title="Methylation Pattern") {
   options(warn=-1)
+  
   pdf(outfile)
-  print(plot_read(df))
-  print(plot_smoothed_read(df))
+  
+  for (r in raw_regions) {
+    reg <- parse_regions(r)
+    reg_title <- paste(title, r, sep=", ")
+    reg_df <- filter_region(df, reg)
+    print(plot_read(reg_df, reg_title))
+    print(plot_smoothed_read(reg_df, reg_title))
+    print(plot_aggregated_read(reg_df, reg_title))
+    
+  }
   # p <- df %>%
   #   plot_read()
   # ggsave(outfile, plot=p, width=width, height=height)
   invisible(dev.off())
 }
 
+
+
 main <- function(arguments) {
-  
 
   ## parse all the genomic regions
   from_file <- NULL
@@ -153,7 +147,7 @@ main <- function(arguments) {
   if (!is.null(arguments$plot)) {
     outfile <- arguments$plot
     verbose("Plotting to %s..\n", outfile)
-    plot_region(df, outfile)
+    plot_region(df, raw_regions, outfile)
   }
   
 }

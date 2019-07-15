@@ -2,8 +2,10 @@ change usage to allow not just query of a single region but multiple regions fro
 
 main.R extract ... (DONE)
 
-add more flexible plotting flag, --title
-for plotting, change smoothing to per-read smoothing, (see Scotts implementation)
+add more flexible plotting flag, --title (DONE)
+for plotting, change smoothing to per-read smoothing, (DONE)
+## if the region is too short, when plotting, chances of error "span is too small"
+
 main.R overlap ...
 
 add usage of finding overlap with proteins from gtf and plotting
