@@ -5,7 +5,12 @@ required rows/columns and returns an indexed dataframe for lazy access.
 "
 
 suppressMessages(library(vroom))
+suppressMessages(library(tidyverse))
 suppressMessages(library(dplyr))
+
+source("mod_nanopolish.R")
+source("mod_tombo.R")
+source("mod_deepsignal.R")
 
 ORDER <- c("seqname", "pos", "read_id", "strand", "log_lik_ratio", "prob_meth")
 
@@ -21,24 +26,16 @@ parse_genomic_region <- function(string) {
   
   region <- list()
   region$contig <- splitted[1]
-  region$start <- reg_pos[1]
-  region$end <- reg_pos[2]
+  
+  ## region strings are 1-based
+  region$start <- reg_pos[1] - 1
+  region$end <- reg_pos[2] - 1
   
   region
 }
 
 parse_regions <- function(raw_regions) {
   lapply(raw_regions, parse_genomic_region)
-}
-
-
-
-lazy_load <- function(filename, cols, coltypes, colnames=NULL) {
-  if (is.null(colnames)) {
-    vroom(filename, col_select=cols, col_types=coltypes)
-  } else {
-    vroom(filename, col_select=cols, col_types=coltypes, col_names=colnames)
-  }
 }
 
 
@@ -59,83 +56,37 @@ filter_region <- function(df, regions) {
   }
 }
 
-load_tombo <- function(filename, raw_regions=NULL) {
-  regions <- parse_regions(raw_regions)
+
+load_mod_data <- function(filename, caller, order=ORDER, raw_regions=NULL, motif="CG") {
+  data_file <- add_class(filename, caller)
   
-  cols <- c("chrm", "pos", "read_id", "strand", "stat")
-  coltypes <- list(chrm = 'c', pos = 'i', read_id = 'c', stat = 'd',
-                   strand = col_factor(levels=c('+', '-')))
+  # load
+  data <- load_file(data_file)
   
-  data <- lazy_load(filename, cols, coltypes) %>%
-    dplyr::rename(seqname = chrm,
-                  log_lik_ratio = stat) %>%
-    filter_region(regions) %>%
-    mutate(prob_meth = 1 / (1 + exp(log_lik_ratio)),
-           pos = ifelse(strand == "-", pos - 1, pos)) %>%
-    select(ORDER)
+  # filter
+  parsed_regions <- parse_regions(raw_regions)
+  data <- filter_region(data, parsed_regions)
+  
+  # preprocess
+  data <- add_class(data, caller)
+  data <- preprocess(data, order, motif)
   
   data
 }
 
-load_nanopolish <- function(filename, raw_regions=NULL, motif="CG") {
-  regions <- parse_regions(raw_regions)
-  
-  cols <- c("chromosome", "start", "read_name", "strand", "log_lik_ratio", 
-            "num_motifs", "sequence")
-  coltypes <- list(chromosome = 'c', start = 'i', read_name = 'c', 
-                   log_lik_ratio = 'd', num_motifs = 'i', sequence = 'c',
-                   strand = col_factor(levels=c('+', '-')))
-  
-  data <- lazy_load(filename, cols, coltypes) %>%
-    dplyr::rename(seqname = chromosome,
-                  pos = start,
-                  read_id = read_name) %>%
-    filter_region(regions) %>%
-    mutate(log_lik_ratio = -1 * log_lik_ratio)
+add_class <- function(x, classname) structure(x, class=append(class(x), classname))
 
-  ## Assign same log-lik-ratio to all bases covered in motif
-  offset <- unlist(gregexpr(pattern=motif, data$sequence)) - 1
-  data <- data %>%
-    uncount(num_motifs) %>%
-    mutate(pos = pos - 5 + offset) %>%
-    select(-sequence)
-  
-  ## Upon inspecting, a single read sometimes produces more than one statistic at a position
-  ## Assuming statistic in the middle contribute the most, use weights from binomial distribution
-  data <- data %>%
-    group_by(seqname, pos, read_id, strand) %>%
-    summarise(log_lik_ratio = sum(
-      dbinom(0:(n()-1), n()-1, 0.5) * log_lik_ratio
-    )) %>%
-    ungroup() %>%
-    mutate(prob_meth = 1 / (1 + exp(log_lik_ratio))) %>%
-    select(ORDER)
-  
-  data
-}
+load_file <- function(filename) UseMethod("load_file")
 
-
-load_deepsignal <- function(filename, raw_regions=NULL) {
-  regions <- parse_regions(raw_regions)
-  
-  colnames <- c("seqname", "pos", "strand", "x1", 
-            "read_id", "x2", "x3", "prob_meth", "x4", "x5")
-  cols <- c("seqname", "pos", "read_id", "strand", "prob_meth")
-  coltypes <- list(seqname = 'c', pos = 'i', read_id = 'c', prob_meth = 'd',
-                   strand = col_factor(levels=c('+', '-')))
-  
-  data <- lazy_load(filename, cols, coltypes, colnames=colnames) %>%
-    filter_region(regions) %>%
-    mutate(log_lik_ratio = log((1 - prob_meth) / prob_meth)) %>%
-    select(ORDER)
-  
-  data
-}
+preprocess <- function(df, order, ...) UseMethod("preprocess")
 
 
 # fileA <- "/stornext/HPCScratch/home/tay.x/scripts/notebooks/small_nanopolish.tsv.gz"
 # fileB <- "/stornext/HPCScratch/home/tay.x/scripts/notebooks/small_tombo.tsv"
 # fileC <- "/stornext/HPCScratch/home/tay.x/scripts/notebooks/small_deepsignal.tsv"
 # a <- load_tombo(fileB, 'OCVW01001791.1:40000-50000')
+# a <- load_file.tombo(fileB)
 # b <- load_nanopolish(fileA, "OCVW01000001.1:26000-30000")
+# b <- load_file.nanopolish(fileA)
 # c <- load_deepsignal(fileC, "NC_001144.5:460000-470000")
+# c <- load_file.deepsignal(fileC)

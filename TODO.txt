@@ -4,7 +4,9 @@ main.R extract ... (DONE)
 
 add more flexible plotting flag, --title (DONE)
 for plotting, change smoothing to per-read smoothing, (DONE)
-## if the region is too short, when plotting, chances of error "span is too small"
+## if the region is too short, when plotting, chances of error "span is too small" (temporary switched back to global span value)
+
+write OOP manner (DONE)
 
 main.R overlap ...
 

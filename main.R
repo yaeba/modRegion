@@ -128,7 +128,7 @@ main <- function(arguments) {
     for (arg in arguments[[caller]]) {
       parsed <- parse_label_file(arg)
       verbose("Loading %s from %s..\n", parsed$label, parsed$filename)
-      dfs[[parsed$label]] <- read_mod_data(caller, parsed$filename, raw_regions)
+      dfs[[parsed$label]] <- load_mod_data(parsed$filename, caller, raw_regions=raw_regions)
     }
   }
   

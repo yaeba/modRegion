@@ -6,35 +6,12 @@ Contains functions to plot per-read modification data
 suppressMessages(library(ggplot2))
 
 
-# plot_smoothed_read <- function(df) {
-#   contig <- unique(df$seqname)
-#   p <- ggplot(df) +
-#     geom_smooth(method="loess",
-#                 aes(x=pos, y=prob_meth, group=read_id, color=sample),
-#                 se=FALSE) +
-#     ggplot2::ylim(0, 1) +
-#     geom_point(aes(x=pos), y=0, pch='|') +
-#     theme_bw() +
-#     ggtitle(title) +
-#     xlab(paste(contig, "pos", sep=", "))
-#   p
-# }
-
-
 plot_smoothed_read <- function(df, title) {
   contig <- unique(df$seqname)
-  smoothed <- df %>%
-    tidyr::nest(-read_id) %>%
-    dplyr::mutate(
-      m = purrr::map(data, loess, formula=prob_meth ~ pos,
-                     method.args=list(span=0.1 + 8 * 10^(-11) * (max(10^5 - (max(pos) - min(pos)), 0)^2))),
-      fitted = purrr::map(m, `[[`, "fitted")
-    ) %>%
-    select(-m) %>%
-    tidyr::unnest()
-  
-  p <- ggplot(smoothed) +
-    geom_line(aes(x=pos, y=fitted, group=read_id, color=sample), size=1) +
+  p <- ggplot(df) +
+    geom_smooth(method="loess",
+                aes(x=pos, y=prob_meth, group=read_id, color=sample),
+                se=FALSE) +
     ggplot2::ylim(0, 1) +
     geom_point(aes(x=pos), y=0, pch='|') +
     theme_bw() +
@@ -42,6 +19,29 @@ plot_smoothed_read <- function(df, title) {
     xlab(paste(contig, "pos", sep=", "))
   p
 }
+
+
+# plot_smoothed_read <- function(df, title) {
+#   contig <- unique(df$seqname)
+#   smoothed <- df %>%
+#     tidyr::nest(-read_id) %>%
+#     dplyr::mutate(
+#       m = purrr::map(data, loess, formula=prob_meth ~ pos,
+#                      method.args=list(span=0.1 + 8 * 10^(-11) * (max(10^5 - (max(pos) - min(pos)), 0)^2))),
+#       fitted = purrr::map(m, `[[`, "fitted")
+#     ) %>%
+#     select(-m) %>%
+#     tidyr::unnest()
+#   
+#   p <- ggplot(smoothed) +
+#     geom_line(aes(x=pos, y=fitted, group=read_id, color=sample), size=1) +
+#     ggplot2::ylim(0, 1) +
+#     geom_point(aes(x=pos), y=0, pch='|') +
+#     theme_bw() +
+#     ggtitle(title) +
+#     xlab(paste(contig, "pos", sep=", "))
+#   p
+# }
 
 
 plot_read <- function(df, title) {
@@ -54,8 +54,7 @@ plot_read <- function(df, title) {
     theme_bw() +
     theme(axis.text.y=element_blank(),
           axis.ticks.y=element_blank()) +
-    ggtitle(title) +
-    xlab(paste(contig, "pos", sep=", "))
+    labs(x=paste(contig, "pos", sep=", "), y="read", title=title)
   p
 }
 
