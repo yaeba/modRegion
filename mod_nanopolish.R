@@ -13,7 +13,7 @@ load_file.nanopolish <- function(filename) {
                   read_id = read_name)
 }
 
-preprocess.nanopolish <- function(df, order, motif="CG") {
+preprocess.nanopolish <- function(df, motif="CG") {
   ## Assign same log-lik-ratio to all bases covered in motif
   offset <- unlist(gregexpr(pattern=motif, df$sequence)) - 1
   data <- df %>%
@@ -31,8 +31,7 @@ preprocess.nanopolish <- function(df, order, motif="CG") {
     )) %>%
     ungroup() %>%
     mutate(pos = pos + 1,
-           prob_meth = 1 / (1 + exp(log_lik_ratio))) %>%
-    select(order)
-  
+           prob_meth = 1 / (1 + exp(log_lik_ratio)))
+    
   data
 }

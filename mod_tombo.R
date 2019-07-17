@@ -10,12 +10,11 @@ load_file.tombo <- function(filename) {
                   log_lik_ratio = stat)
 }
 
-preprocess.tombo <- function(df, order, ...) {
+preprocess.tombo <- function(df, ...) {
   data <- df %>%
     mutate(pos = pos + 1,
            pos = ifelse(strand == "-", pos - 1, pos),
-           prob_meth = 1 / (1 + exp(log_lik_ratio))) %>%
-    select(order)
+           prob_meth = 1 / (1 + exp(log_lik_ratio))) 
   
   data
 }

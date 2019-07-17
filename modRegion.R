@@ -4,8 +4,9 @@
 'Main Program.
 
 Usage:
-	modRegion.R extract (-r=<region> | -f=<regions_txt>)... (-o=<output> | -p=<plot> [--title=<title>])... [--nanopolish <[label:]fileA>]... [--tombo <[label:]fileB>]... [--deepsignal <[label:]fileC]...
-	modRegion.R overlap [--nanopolish <[label:]fileA>]... [--tombo <[label:]fileB>]... [--deepsignal <[label:]fileC]...
+	modRegion.R extract (-r=<region> | -f=<regions_txt>)... (-o=<output> | -p=<plot> [--title=<title>])... [--nanopolish <[label:]fileA>]... [--tombo <[label:]fileB>]... [--deepsignal <[label:]fileC>]...
+	modRegion.R overlap (-o=<output> | -p=<plot>)... [--overhang <overhang>] [--gene_name <gene_name>]... [--gene_biotype <gene_biotype>]... [-r=<region> | -f=<regions_txt>]... [--nanopolish <[label:]fileA>]... [--tombo <[label:]fileB>]... [--deepsignal <[label:]fileC>]... <gtf_file>
+	modRegion.R --help
 
 Options:
 	-h --help  Show this screen.
@@ -14,19 +15,25 @@ Options:
 	--nanopolish <[label:]fileA>  Nanopolish methylation data and (optional) label name.
 	--tombo <[label:]fileB>  Tombo methylation data and (optional) label name.
 	--deepsignal <[label:]fileC>  DeepSignal methylation data and (optional) label name.
-	--gene <gtf_file>  Gene information in Gene Transfer Format.
-	-o --output=<output>  Save dataframe to tsv.
+	-o --output=<output>  Save dataframe to .tsv or .tsv.gz file.
 	-p --plot=<plot>  Save plot(s) to pdf.
+	--gene_name <gene_name>  Name of the gene, can be given multiple times. 
+	--gene_biotype <gene_biotype>  Biotype of gene, eg "protein_coding", can be given multiple times. [default: protein_coding]
+	--overhang <overhang>  Up to how many bases up and downstream from gene. [default: 2000]
 	--title=<title>  Title of the plot.
-
-
+	
+Arguments:
+	gtf_file  Gene Transfer Format that contains gene informations
 ' -> doc
 
 suppressMessages(library(docopt))
 suppressMessages(library(tidyverse))
+suppressMessages(library(rtracklayer))
+suppressMessages(library(data.table))
 
 source("load_mod_data.R")
 source("plot_mod_data.R")
+source("mod_gene_overlaps.R")
 
 arguments <- docopt(doc)
 
@@ -102,12 +109,49 @@ extract_regions <- function(arguments, raw_regions) {
     for (arg in arguments[[caller]]) {
       parsed <- parse_label_file(arg)
       verbose("Loading %s from %s..\n", parsed$label, parsed$filename)
+      
       dfs[[parsed$label]] <- load_mod_data(parsed$filename, caller, raw_regions=raw_regions)
     }
   }
   
   ## merge the queried dataframes
   bind_rows(dfs, .id="sample")
+}
+
+
+
+overlap_genes <- function(arguments, raw_regions) {
+  dfs <- list()
+  
+  verbose("Loding genes data from %s..\n", arguments$gtf_file)
+  ## read genes data
+  genes <- load_gtf(arguments$gtf_file, 
+                    arguments$gene_name, arguments$gene_biotype,
+                    as.numeric(arguments$overhang))
+  
+  ## find overlaps for all input files
+  for (caller in CALLERS) {
+    for (arg in arguments[[caller]]) {
+      parsed <- parse_label_file(arg)
+      verbose("Loading %s from %s..\n", parsed$label, parsed$filename)
+      
+      dfs[[parsed$label]] <- mod_gene_overlaps(parsed$filename, caller, genes,
+                                               raw_regions=raw_regions)
+    }
+  }
+  
+  ## merge all overlap dataframes
+  bind_rows(dfs, .id="sample")
+  
+  
+  # b <- q[seqnames(q)=='10' & start(q) >  69398773 & end(q) <        70027438]
+  # 
+  # q <- a %>% as_tibble() %>% filter(type %in% c('exon')) %>% makeGRangesFromDataFrame(keep.extra.columns = TRUE)
+  # b <- q[seqnames(q)=='10' & start(q) >=  69422683 & end(q) <=        69566361]
+  #         
+  # grlist <- split(b, b$gene_name) %>% GRangesList()
+  # p <- ggplot(grlist) + geom_alignment(label=TRUE)
+  
 }
 
 main <- function(arguments) {
@@ -132,9 +176,13 @@ main <- function(arguments) {
   }
   
   if (arguments$overlap) {
-    ## not yet implemented
-    verbose("Not yet implemented\n")
-    quit(save='no')
+    
+    
+    # ## not yet implemented
+    # verbose("Not yet implemented\n")
+    # quit(save='no')
+    
+    df <- overlap_genes(arguments, raw_regions)
   }
   
   
@@ -146,7 +194,7 @@ main <- function(arguments) {
   }
   
   ## plot and save to pdf
-  if (!is.null(arguments$plot)) {
+  if (!is.null(arguments$plot) && !arguments$overlap) {
     outfile <- arguments$plot
     verbose("Plotting to %s..\n", outfile)
     plot_region(df, raw_regions, outfile)

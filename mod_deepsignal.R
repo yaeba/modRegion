@@ -12,11 +12,10 @@ load_file.deepsignal <- function(filename) {
 }
 
 
-preprocess.deepsignal <- function(df, order, ...) {
+preprocess.deepsignal <- function(df, ...) {
   data <- df %>%
     mutate(pos = pos + 1,
-           log_lik_ratio = log((1 - prob_meth) / prob_meth)) %>%
-    select(order)
+           log_lik_ratio = log((1 - prob_meth) / prob_meth))
   
   data
 }

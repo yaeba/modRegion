@@ -12,7 +12,8 @@ source("mod_nanopolish.R")
 source("mod_tombo.R")
 source("mod_deepsignal.R")
 
-ORDER <- c("seqname", "pos", "read_id", "strand", "log_lik_ratio", "prob_meth")
+ORDER_EXTRACT <- 
+  c("seqname", "pos", "read_id", "strand", "log_lik_ratio", "prob_meth")
 
 
 parse_genomic_region <- function(string) {
@@ -57,7 +58,7 @@ filter_region <- function(df, regions) {
 }
 
 
-load_mod_data <- function(filename, caller, order=ORDER, raw_regions=NULL, motif="CG") {
+load_mod_data <- function(filename, caller, order=ORDER_EXTRACT, raw_regions=NULL, motif="CG") {
   data_file <- add_class(filename, caller)
   
   # load
@@ -69,16 +70,17 @@ load_mod_data <- function(filename, caller, order=ORDER, raw_regions=NULL, motif
   
   # preprocess
   data <- add_class(data, caller)
-  data <- preprocess(data, order, motif)
-  
-  data
+  data <- preprocess(data, motif)
+
+  data %>%
+    select(order)
 }
 
 add_class <- function(x, classname) structure(x, class=append(class(x), classname))
 
 load_file <- function(filename) UseMethod("load_file")
 
-preprocess <- function(df, order, ...) UseMethod("preprocess")
+preprocess <- function(df, ...) UseMethod("preprocess")
 
 
 # fileA <- "/stornext/HPCScratch/home/tay.x/scripts/notebooks/small_nanopolish.tsv.gz"
