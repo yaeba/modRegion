@@ -6,14 +6,14 @@ gene data in GTF file
 
 suppressMessages(library(tidyverse))
 suppressMessages(library(data.table))
-suppressMessages(library(rtracklayer))
 
 ORDER_OVERLAP <-
   c("seqname", "pos", "read_id", "strand", "log_lik_ratio", "prob_meth",
     "gene_name", "gene_biotype", "gene_strand", "gene_start", "gene_end")
 
-load_gtf <- function(gtf_file, gene_names=NULL, gene_biotypes=NULL, overhang=2000) {
-  genes <- import(gtf_file) %>%
+load_genes <- function(gtf, gene_names=NULL, gene_biotypes=NULL, overhang=2000) {
+
+  genes <- gtf %>%
     as_tibble() %>%
     dplyr::rename(seqname = seqnames,
                   gene_strand = strand) %>%

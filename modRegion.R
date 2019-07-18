@@ -27,21 +27,14 @@ Arguments:
 ' -> doc
 
 suppressMessages(library(docopt))
-suppressMessages(library(tidyverse))
-suppressMessages(library(rtracklayer))
-suppressMessages(library(data.table))
 
-source("load_mod_data.R")
-source("plot_mod_data.R")
-source("mod_gene_overlaps.R")
+
 
 arguments <- docopt(doc)
 
-print(arguments)
+# print(arguments)
 
 CALLERS <- c("nanopolish", "tombo", "deepsignal")
-
-# main.R overlap [-r <region] (-o <output> | -p <plot>)... --gene <gtf_file> [--nanopolish <[label:]fileA>]... [--tombo <[label:]fileB>]... [--deepsignal <[label:]fileC]...
 
 
 verbose <- function(...) cat(sprintf(...), sep='', file=stderr())
@@ -80,23 +73,36 @@ write_output <- function(df, outfile) {
 }
 
 
-plot_region <- function(df, raw_regions, outfile, width=10, height=10, title="Methylation Pattern") {
+plot_regions <- function(df, raw_regions, outfile, gtf=NULL, title="Methylation Pattern",
+                         width=10, height=10) {
+  source("plot_mod_data.R")
+  
   options(warn=-1)
   
-  pdf(outfile)
+  pdf(outfile, width=width, height=height)
+  
+  ## df sometimes contains multiple statistics covered in multiple genes
+  if ("gene_name" %in% names(df)) {
+    df <- df %>%
+      group_by(sample, seqname, pos, read_id, strand) %>%
+      summarise(prob_meth = mean(prob_meth)) %>%
+      ungroup()
+  }
   
   for (r in raw_regions) {
+    verbose("Ploting %s..\n", r)
     reg <- parse_regions(r)
     reg_title <- paste(title, r, sep=", ")
-    reg_df <- filter_region(df, reg)
-    print(plot_read(reg_df, reg_title))
-    print(plot_smoothed_read(reg_df, reg_title))
-    print(plot_aggregated_read(reg_df, reg_title))
     
+    reg_df <- filter_region(df, reg)
+    
+    if (dim(reg_df)[1] == 0) {
+      ## no statistics in the region
+      next
+    }
+    print(plot_tracks(reg_df, gtf=gtf, title=reg_title))
   }
-  # p <- df %>%
-  #   plot_read()
-  # ggsave(outfile, plot=p, width=width, height=height)
+  
   invisible(dev.off())
 }
 
@@ -120,14 +126,14 @@ extract_regions <- function(arguments, raw_regions) {
 
 
 
-overlap_genes <- function(arguments, raw_regions) {
+overlap_genes <- function(arguments, gtf, raw_regions) {
   dfs <- list()
   
   verbose("Loding genes data from %s..\n", arguments$gtf_file)
   ## read genes data
-  genes <- load_gtf(arguments$gtf_file, 
-                    arguments$gene_name, arguments$gene_biotype,
-                    as.numeric(arguments$overhang))
+  genes <- load_genes(gtf, arguments$gene_name, 
+                      arguments$gene_biotype,
+                      as.numeric(arguments$overhang))
   
   ## find overlaps for all input files
   for (caller in CALLERS) {
@@ -155,7 +161,10 @@ overlap_genes <- function(arguments, raw_regions) {
 }
 
 main <- function(arguments) {
-
+  
+  suppressMessages(library(tidyverse))
+  source("load_mod_data.R")
+  
   ## parse all the genomic regions
   from_file <- NULL
   if (!is.null(arguments$regions_file)) {
@@ -166,23 +175,25 @@ main <- function(arguments) {
   raw_regions <- c(from_file, arguments$region)
   
   verbose("Region(s): ")
-  verbose(paste(raw_regions, collapse=', '))
+  verbose(ifelse(!is.null(raw_regions),
+                 paste(raw_regions, collapse=', '),
+                 "NULL"))
   verbose('\n')
   
   df <- list()
+  gtf <- NULL
   
   if (arguments$extract) {
     df <- extract_regions(arguments, raw_regions)
   }
   
   if (arguments$overlap) {
+    source("mod_gene_overlaps.R")
+    suppressMessages(library(rtracklayer))
     
-    
-    # ## not yet implemented
-    # verbose("Not yet implemented\n")
-    # quit(save='no')
-    
-    df <- overlap_genes(arguments, raw_regions)
+    verbose("Reading %s..\n", arguments$gtf_file)
+    gtf <- import(arguments$gtf_file)
+    df <- overlap_genes(arguments, gtf, raw_regions)
   }
   
   
@@ -194,10 +205,10 @@ main <- function(arguments) {
   }
   
   ## plot and save to pdf
-  if (!is.null(arguments$plot) && !arguments$overlap) {
+  if (!is.null(arguments$plot)) {
     outfile <- arguments$plot
     verbose("Plotting to %s..\n", outfile)
-    plot_region(df, raw_regions, outfile)
+    plot_regions(df, raw_regions, outfile, gtf=gtf)
   }
   
 }
