@@ -5,7 +5,7 @@ load_file.tombo <- function(filename) {
   coltypes <- list(chrm = 'c', pos = 'i', read_id = 'c', stat = 'd',
                    strand = col_factor(levels=c('+', '-')))
   
-  vroom(filename, col_select=cols, col_types=coltypes) %>%
+  vroom(filename, delim='\t', col_select=cols, col_types=coltypes) %>%
     dplyr::rename(seqname = chrm,
                   log_lik_ratio = stat)
 }

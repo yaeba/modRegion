@@ -7,6 +7,8 @@ gene data in GTF file
 suppressMessages(library(tidyverse))
 suppressMessages(library(data.table))
 
+source("load_mod_data.R", chdir=TRUE)
+
 ORDER_OVERLAP <-
   c("seqname", "pos", "read_id", "strand", "log_lik_ratio", "prob_meth",
     "gene_name", "gene_biotype", "gene_strand", "gene_start", "gene_end")
@@ -43,7 +45,7 @@ find_overlaps <- function(mod_df, genes) {
     as.data.table()
   mod_table[, end := start]
   
-  overlaps <- foverlaps(mod_table, genes, nomatch=0, type='within')
+  overlaps <- foverlaps(mod_table, genes, nomatch=NA, type='within')
   setnames(overlaps,
            old="i.start",
            new="pos")
@@ -56,7 +58,6 @@ find_overlaps <- function(mod_df, genes) {
 
 mod_gene_overlaps <- function(filename, caller, genes, order=ORDER_OVERLAP,
                               raw_regions=NULL, motif="CG") {
-  source("load_mod_data.R")
   
   ## load modification data
   mod_df <- filename %>%

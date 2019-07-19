@@ -8,7 +8,8 @@ load_file.deepsignal <- function(filename) {
   coltypes <- list(seqname = 'c', pos = 'i', read_id = 'c', prob_meth = 'd',
                    strand = col_factor(levels=c('+', '-')))
   
-  vroom(filename, col_select=cols, col_types=coltypes, col_names=colnames)
+  vroom(filename, delim='\t',
+        col_select=cols, col_types=coltypes, col_names=colnames)
 }
 
 

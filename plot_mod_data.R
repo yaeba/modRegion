@@ -82,10 +82,16 @@ plot_annotation <- function(gtf, seqname, genome_start, genome_end) {
     as_tibble() %>%
     makeGRangesFromDataFrame(keep.extra.columns=TRUE)
   
-  split(filtered, filtered$gene_name) %>%
+  p <- split(filtered, filtered$gene_name) %>%
     GRangesList() %>%
-    ggplot() +
-    geom_alignment(label=TRUE)
+    ggplot()
+  
+  if (!isEmpty(filtered)) {
+    p <- p + geom_alignment(label=TRUE)
+  } else {
+    p <- p + geom_point() + ggplot2::xlim(genome_start, genome_end)
+  }
+  p
 }
 
 
@@ -114,5 +120,5 @@ plot_tracks <- function(df, gtf=NULL, title="TITLE", highlights=NULL) {
   p <- tracks(plots, main=title) +
     theme_tracks_sunset()
   
-  invisible(p)
+  p
 }

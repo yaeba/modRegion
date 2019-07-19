@@ -12,4 +12,13 @@ main.R overlap ... (DONE)
 
 add usage of finding overlap with proteins from gtf (DONE)
 
-and plotting
+and plotting (DONE)
+
+silent warning messages by ggbio::tracks
+
+make calling ./modRegion.R possible from other dirs, sourcing prob (DONE)
+
+filter gtf to interested regions before converting to genes only?
+
+add modRegion.R plot to plot from queried/filtered tsv
+

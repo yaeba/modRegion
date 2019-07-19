@@ -7,7 +7,7 @@ load_file.nanopolish <- function(filename) {
                    log_lik_ratio = 'd', num_motifs = 'i', sequence = 'c',
                    strand = col_factor(levels=c('+', '-')))
   
-  vroom(filename, col_select=cols, col_types=coltypes) %>%
+  vroom(filename, delim='\t', col_select=cols, col_types=coltypes) %>%
     dplyr::rename(seqname = chromosome,
                   pos = start,
                   read_id = read_name)
@@ -25,7 +25,7 @@ preprocess.nanopolish <- function(df, motif="CG") {
   ## Upon inspecting, a single read sometimes produces more than one statistic at a position
   ## Assuming statistic in the middle contribute the most, use weights from binomial distribution
   data <- data %>%
-    group_by(seqname, pos, read_id, strand) %>%
+    group_by_at(vars(-log_lik_ratio)) %>%
     summarise(log_lik_ratio = sum(
       dbinom(0:(n()-1), n()-1, 0.5) * log_lik_ratio
     )) %>%
