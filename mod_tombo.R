@@ -14,7 +14,7 @@ preprocess.tombo <- function(df, ...) {
   data <- df %>%
     mutate(pos = pos + 1,
            pos = ifelse(strand == "-", pos - 1, pos),
-           prob_meth = 1 / (1 + exp(log_lik_ratio))) 
+           prob_mod = 1 / (1 + exp(log_lik_ratio))) 
   
   data
 }

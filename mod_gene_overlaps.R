@@ -10,7 +10,7 @@ suppressMessages(library(data.table))
 source("load_mod_data.R", chdir=TRUE)
 
 ORDER_OVERLAP <-
-  c("seqname", "pos", "read_id", "strand", "log_lik_ratio", "prob_meth",
+  c("seqname", "pos", "read_id", "strand", "log_lik_ratio", "prob_mod",
     "gene_name", "gene_biotype", "gene_strand", "gene_start", "gene_end")
 
 load_genes <- function(gtf, gene_names=NULL, gene_biotypes=NULL, overhang=2000) {

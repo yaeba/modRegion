@@ -11,7 +11,7 @@ plot_smoothed_read <- function(df, title=NULL) {
   contig <- unique(df$seqname)
   p <- ggplot(df) +
     geom_smooth(method="loess",
-                aes(x=pos, y=prob_meth, group=read_id, color=sample),
+                aes(x=pos, y=prob_mod, group=read_id, color=sample),
                 se=FALSE, span=1) +
     ggplot2::ylim(0, 1) +
     geom_point(aes(x=pos), y=0, pch='|') +
@@ -27,7 +27,7 @@ plot_smoothed_read <- function(df, title=NULL) {
 #   smoothed <- df %>%
 #     tidyr::nest(-read_id) %>%
 #     dplyr::mutate(
-#       m = purrr::map(data, loess, formula=prob_meth ~ pos,
+#       m = purrr::map(data, loess, formula=prob_mod ~ pos,
 #                      method.args=list(span=0.1 + 8 * 10^(-11) * (max(10^5 - (max(pos) - min(pos)), 0)^2))),
 #       fitted = purrr::map(m, `[[`, "fitted")
 #     ) %>%
@@ -48,7 +48,7 @@ plot_smoothed_read <- function(df, title=NULL) {
 plot_read <- function(df, title=NULL) {
   contig <- unique(df$seqname)
   
-  p <- ggplot(df, aes(x=pos, group=read_id, y=1, color=prob_meth)) + 
+  p <- ggplot(df, aes(x=pos, group=read_id, y=1, color=prob_mod)) + 
     geom_line(position=ggstance::position_dodgev(height=0.2), size=3) +
     scale_color_gradient2(low="blue", mid="white", high="red", midpoint=0.5, space="Lab") +
     facet_grid(rows=vars(sample), switch='y') +
@@ -63,9 +63,9 @@ plot_aggregated_read <- function(df, title=NULL) {
   contig <- unique(df$seqname)
   p <- df %>%
     group_by(sample, pos) %>%
-    summarise(prob_meth = mean(prob_meth)) %>%
+    summarise(prob_mod = mean(prob_mod)) %>%
     ungroup() %>%
-    ggplot(aes(x=pos, y=prob_meth, color=sample)) +
+    ggplot(aes(x=pos, y=prob_mod, color=sample)) +
     geom_point(alpha=0.1) +
     geom_smooth(method="loess") +
     coord_cartesian(ylim=c(0, 1)) +

@@ -1,11 +1,12 @@
 #!/usr/bin/env Rscript
 
 
-'Main Program.
+'modRegion 
+A tool to quickly access, query and merge per-read base modification results from different software tools.
 
 Usage:
-	modRegion.R extract (-r=<region> | -f=<regions_txt>)... (-o=<output> | -p=<plot_file> [--title=<title>])... [--nanopolish <[label:]fileA>]... [--tombo <[label:]fileB>]... [--deepsignal <[label:]fileC>]...
-	modRegion.R overlap (-o=<output> | -p=<plot_file> [--title=<title>])... [--overhang <overhang>] [--gene_name <gene_name>]... [--gene_biotype <gene_biotype>]... [-r=<region> | -f=<regions_txt>]... [--nanopolish <[label:]fileA>]... [--tombo <[label:]fileB>]... [--deepsignal <[label:]fileC>]... --gtf=<gtf_file>
+	modRegion.R extract (-r=<region> | -f=<regions_txt>)... (-o=<output> | -p=<plot_file> [--title=<title>])... [--nanopolish <[label:]file>]... [--tombo <[label:]file>]... [--deepsignal <[label:]file>]...
+	modRegion.R overlap (-o=<output> | -p=<plot_file> [--title=<title>])... [--overhang <overhang>] [--gene_name <gene_name>]... [--gene_biotype <gene_biotype>]... [-r=<region> | -f=<regions_txt>]... [--nanopolish <[label:]file>]... [--tombo <[label:]file>]... [--deepsignal <[label:]file>]... --gtf=<gtf_file>
 	modRegion.R plot [--gtf=<gtf_file>] (-r=<region> | -f=<regions_txt>)... -p=<plot_file> <mod_file>... 
 	modRegion.R --help
 
@@ -13,9 +14,9 @@ Options:
 	-h --help  Show this screen.
 	-r --region=<region>  Genomic region in UCSC/IGV/samtools format, eg "chr9:3500-4500", can be given multiple times.
 	-f --regions_file=<regions_txt>  File containing genomic regions (one per line).
-	--nanopolish <[label:]fileA>  Nanopolish methylation data and (optional) label name.
-	--tombo <[label:]fileB>  Tombo methylation data and (optional) label name.
-	--deepsignal <[label:]fileC>  DeepSignal methylation data and (optional) label name.
+	--nanopolish <[label:]file>  Nanopolish methylation data and (optional) label name.
+	--tombo <[label:]file>  Tombo methylation data and (optional) label name.
+	--deepsignal <[label:]file>  DeepSignal methylation data and (optional) label name.
 	-o --output=<output>  Save dataframe to .tsv or .tsv.gz file.
 	-p --plot_file=<plot_file>  Save plot(s) to pdf.
 	--gtf <gtf_file>  Gene Transfer Format that contains gene informations.
@@ -24,8 +25,8 @@ Options:
 	--overhang <overhang>  Up to how many bases up and downstream from gene. [default: 2000]
 	--title=<title>  Title of the plot.
 	
-Arguments:
-	mod_file  Modification file extracted by modRegion, can be given multiple times to merge between samples.
+Argument:
+	mod_file  Modification .tsv or .tsv.gz file filtered with modRegion.
 ' -> doc
 
 suppressMessages(library(docopt))
@@ -46,6 +47,12 @@ verbose <- function(...) cat(sprintf(...), sep='', file=stderr())
 
 source_from_main <- function(other) {
   source(paste(dirname(path), other, sep='/'), chdir=TRUE)
+}
+
+load_gtf <- function(gtf_file) {
+  suppressMessages(library(rtracklayer))
+  verbose("Reading %s..\n", gtf_file)
+  import(gtf_file)
 }
 
 parse_label_file <- function(string) {
@@ -77,7 +84,7 @@ write_output <- function(df, outfile) {
   df %>%
     drop_na() %>%
     mutate(log_lik_ratio = formatC(log_lik_ratio, digits=4, format='fg'),
-           prob_meth = formatC(prob_meth, digits=4, format='fg')) %>%
+           prob_mod = formatC(prob_mod, digits=4, format='fg')) %>%
     vroom_write(outfile)
 }
 
@@ -94,7 +101,7 @@ plot_regions <- function(df, raw_regions, outfile, gtf=NULL, title="Methylation 
   if ("gene_name" %in% names(df)) {
     df <- df %>%
       group_by(sample, seqname, pos, read_id, strand) %>%
-      summarise(prob_meth = mean(prob_meth)) %>%
+      summarise(prob_mod = mean(prob_mod)) %>%
       ungroup()
   }
   
@@ -194,16 +201,21 @@ main <- function(arguments) {
   ## find overlaps between all input files and genes from gtf
   if (arguments$overlap) {
     source_from_main("mod_gene_overlaps.R")
-    suppressMessages(library(rtracklayer))
     
-    verbose("Reading %s..\n", arguments$gtf)
-    gtf <- import(arguments$gtf)
+    gtf <- load_gtf(arguments$gtf)
     df <- overlap_genes(arguments, gtf, raw_regions)
   }
   
+  ## plot from filtered input files
   if (arguments$plot) {
-    verbose("Not yet implemented\n")
-    quit(save="no")
+    if (!is.null(arguments$gtf)) {
+      gtf <- load_gtf(arguments$gtf)
+    }
+    df <- lapply(arguments$mod_file, function(x) {
+      verbose("Reading %s..\n", x)
+      read.table(x, sep='\t', header=TRUE, stringsAsFactors=FALSE)
+    }) %>%
+      bind_rows()
   }
   
   ## output merged dataframe

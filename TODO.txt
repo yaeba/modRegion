@@ -20,5 +20,12 @@ make calling ./modRegion.R possible from other dirs, sourcing prob (DONE)
 
 filter gtf to interested regions before converting to genes only?
 
-add modRegion.R plot to plot from queried/filtered tsv
+add modRegion.R plot to plot from queried/filtered tsv (DONE)
 
+optimise find overlap (current implementation materialize altrep) lose advantage in RAM usage
+
+vroom does not index numeric vectors (altrep=false), can consider reading and indexing as characters first
+
+filter_regions has high memory consumption during the process, and vroom does not play nicely with dplyr::filter (will materialize columns afterwards), consider using slicing?
+
+documentation?

@@ -31,7 +31,7 @@ preprocess.nanopolish <- function(df, motif="CG") {
     )) %>%
     ungroup() %>%
     mutate(pos = pos + 1,
-           prob_meth = 1 / (1 + exp(log_lik_ratio)))
+           prob_mod = 1 / (1 + exp(log_lik_ratio)))
     
   data
 }

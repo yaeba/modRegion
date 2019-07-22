@@ -13,7 +13,7 @@ source("mod_tombo.R")
 source("mod_deepsignal.R")
 
 ORDER_EXTRACT <- 
-  c("seqname", "pos", "read_id", "strand", "log_lik_ratio", "prob_meth")
+  c("seqname", "pos", "read_id", "strand", "log_lik_ratio", "prob_mod")
 
 
 parse_genomic_region <- function(string) {
@@ -82,13 +82,3 @@ load_file <- function(filename) UseMethod("load_file")
 
 preprocess <- function(df, ...) UseMethod("preprocess")
 
-
-# fileA <- "/stornext/HPCScratch/home/tay.x/scripts/notebooks/small_nanopolish.tsv.gz"
-# fileB <- "/stornext/HPCScratch/home/tay.x/scripts/notebooks/small_tombo.tsv"
-# fileC <- "/stornext/HPCScratch/home/tay.x/scripts/notebooks/small_deepsignal.tsv"
-# a <- load_tombo(fileB, 'OCVW01001791.1:40000-50000')
-# a <- load_file.tombo(fileB)
-# b <- load_nanopolish(fileA, "OCVW01000001.1:26000-30000")
-# b <- load_file.nanopolish(fileA)
-# c <- load_deepsignal(fileC, "NC_001144.5:460000-470000")
-# c <- load_file.deepsignal(fileC)
