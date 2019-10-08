@@ -40,13 +40,14 @@ parse_regions <- function(raw_regions) {
 }
 
 
+in_region <- function(s, p, r) {s == r$contig & p >= r$start & p <= r$end}
+
 
 filter_region <- function(df, regions) {
   if (is_empty(regions)) {
     df
   } else {
     ## filter to those in region(s)
-    in_region <- function(s, p, r) {s == r$contig & p >= r$start & p <= r$end}
 
     df %>%
       filter(

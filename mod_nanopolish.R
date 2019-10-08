@@ -30,7 +30,8 @@ preprocess.nanopolish <- function(df, motif="CG") {
       dbinom(0:(n()-1), n()-1, 0.5) * log_lik_ratio
     )) %>%
     ungroup() %>%
-    mutate(pos = pos + 1,
+    mutate(read_id = sub("_Basecall_1D_template", "", read_id),
+           pos = pos + 1,
            prob_mod = 1 / (1 + exp(log_lik_ratio)))
     
   data

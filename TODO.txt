@@ -28,4 +28,8 @@ vroom does not index numeric vectors (altrep=false), can consider reading and in
 
 filter_regions has high memory consumption during the process, and vroom does not play nicely with dplyr::filter (will materialize columns afterwards), consider using slicing?
 
-documentation?
+documentation? (DONE)
+
+make subsampling during overplotting
+
+load_nanopolish has "_Basecall_1D_template" at the end of every read_id
