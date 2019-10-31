@@ -9,7 +9,9 @@ suppressMessages(library(ggplot2))
 
 plot_smoothed_read <- function(df, title=NULL) {
   contig <- unique(df$seqname)
-  p <- ggplot(df) +
+  p <- df %>%
+    mutate(read_id = paste(read_id, sample, sep='_')) %>%
+    ggplot() +
     geom_smooth(method="loess",
                 aes(x=pos, y=prob_mod, group=read_id, color=sample),
                 se=FALSE, span=1) +
@@ -98,15 +100,15 @@ plot_annotation <- function(gtf, seqname, genome_start, genome_end) {
 plot_tracks <- function(df, gtf=NULL, title="TITLE", highlights=NULL, max_reads=50) {
   suppressMessages(library(ggbio))
   
-  if (dim(df)[1] > max_reads) {
-    n <- max_reads %/% length(unique(df$sample))
-    ## subsample from df
-    df <- df %>%
-      group_by(sample) %>%
-      subset(read_id %in% sample(unique(.$read_id), n)) %>%
-      ungroup()
-    
-  }
+#  if (dim(df)[1] > max_reads) {
+#    n <- max_reads %/% length(unique(df$sample))
+#    ## subsample from df
+#    df <- df %>%
+#      group_by(sample) %>%
+#      subset(read_id %in% sample(unique(.$read_id), n)) %>%
+#      ungroup()
+#    
+#  }
   
   contig <- unique(df$seqname)
   genome_start <- min(df$pos)
