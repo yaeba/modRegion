@@ -68,6 +68,13 @@ modRegion can work with and write to compressed tsv freely.
   -p test/small_deepsignal.plots.pdf
 ```
 
+| sample   | seqname     | pos    | read_id                              | strand | log_lik_ratio | prob_mod | 
+|----------|-------------|--------|--------------------------------------|--------|---------------|----------| 
+| sample_1 | NC_001144.5 | 462607 | 5535970a-66a3-4f45-a391-1386afbad4f9 | +      | 0.2734        | 0.4321   | 
+| sample_1 | NC_001144.5 | 462653 | 5535970a-66a3-4f45-a391-1386afbad4f9 | +      | 3.058         | 0.04486  | 
+| sample_1 | NC_001144.5 | 462655 | 5535970a-66a3-4f45-a391-1386afbad4f9 | +      | 3.126         | 0.04205  | 
+
+
 Users can give multiple `-r` or `-f` options in order to query into multiple regions. It is also possible to provide multiple input files from any supported callers, each with an optional label name as shown below. The program with merge the results into one single dataframe and plot as different samples.
 
 ```bash
@@ -77,7 +84,7 @@ Users can give multiple `-r` or `-f` options in order to query into multiple reg
   -o test/nanotom.extracted.tsv.gz \
   -p test/nanotom.plots.pdf \
   --title "Tombo vs Nanopolish"
-```
+```                                               
 
 Tsv returned will have the following columns:
    - sample: label name of sample
@@ -88,6 +95,17 @@ Tsv returned will have the following columns:
    - log_lik_ratio: log likelihood ratio of not modified to modified
    - prob_mod: probability of base modification at this pos
    
+| sample | seqname | pos       | read_id                              | strand | log_lik_ratio | prob_mod | 
+|--------|---------|-----------|--------------------------------------|--------|---------------|----------| 
+| nano   | 2       | 174279377 | 0bd2cba4-b5c8-411f-8a8d-a2323f799728 | +      | -3.66         | 0.9749   | 
+| nano   | 2       | 174279377 | d231b863-d45f-4577-af60-137a4ede78c1 | +      |  1.32         | 0.2108   | 
+|     |   |         |                  . . .                |   |        |        | 
+| tom | 7 | 6735740 | d22fe339-6cca-4b5e-acbc-34786c5b0460 | - | -2.499 | 0.9241 | 
+| tom | 7 | 6735613 | d22fe339-6cca-4b5e-acbc-34786c5b0460 | - | -5.362 | 0.9953 | 
+| tom | 7 | 6735598 | d22fe339-6cca-4b5e-acbc-34786c5b0460 | - | -1.739 | 0.8505 | 
+
+![nanotom](examples/nanotom_plot.png)
+
 ### 2. overlap
 modRegion finds all the statistics that fall in or up to *overhang* bases away from any genes as specified in the GTF file. This could be helpful in studying the modification pattern around the gene, especially in the prometer region. Users can also optionally specify the name of gene or the gene biotype as in GTF file. Using `-p` coupled with `-r` or `-f` option will produce a similar plot as before but with an extra track added showing the gene annotation at that region.
 
@@ -107,6 +125,18 @@ Returned file is in the following format, in addition to the columns before:
    - gene_strand: direction of transcription
    - gene_start: 0-based gene start position on forward strand
    - gene_end: 0-based gene end position on forward strand
+   
+| sample   | seqname | pos      | read_id                              | strand | log_lik_ratio | prob_mod | gene_name | gene_biotype   | gene_strand | gene_start | gene_end | 
+|----------|---------|----------|--------------------------------------|--------|---------------|----------|-----------|----------------|-------------|------------|----------| 
+| paternal | 10      | 13085491 | 29605b24-2fda-43bc-8b01-0ded01872fbf | +      |  3.49         | 0.0296   | Plagl1    | protein_coding | +           | 13060503   | 13131693 | 
+| paternal | 10      | 13085491 | 29d053d2-1428-417f-9c38-364ffa486c4c | +      |  -0.3         | 0.5744   | Plagl1    | protein_coding | +           | 13060503   | 13131693 | 
+|          |   |         |                  . . .                 |   |        |        |       |                |   |         |         | 
+| maternal | 7 | 6736662 | 507d6453-e44f-4b4f-8367-ff96b687fea8 | + |  -7.4  | 0.9994 | Usp29 | protein_coding | + | 6730577 | 6967218 | 
+| maternal | 7 | 6736662 | 7184ca84-3dd6-484a-bc39-796eb92642f1 | - | -14.93 |     1  | Usp29 | protein_coding | + | 6730577 | 6967218 | 
+
+![icr_plot1](examples/icr_plot1.png)
+![icr_plot2](examples/icr_plot2.png)
+
  
  ### 3. plot
  Added so that users could generate plots of different regions without re-running modRegion **extract** or **overlap**. With output from previous example as input, the following command plots the regions again with gene annotation added.
